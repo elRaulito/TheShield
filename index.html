@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The shield</title>
+    <style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" fill="%23FFFFFF"><text x="50%" y="50%" font-size="40" dy=".3em" text-anchor="middle">🛡️</text></svg>');
+        background-repeat: repeat;
+    }
+      @keyframes moveShields {
+          0% {
+              transform: translate(0, 0);
+          }
+          50% {
+              transform: translate(20px, 20px);
+          }
+          100% {
+              transform: translate(0, 0);
+          }
+      }
+
+      body::before,
+body::after {
+    /* ... (existing styles) */
+    animation: moveShields 10s linear infinite alternate;
+}
+
+
+
+      #container {
+          background-color: rgba(5, 125, 255, 255);
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 0 10px rgba(0, 0, 125, 0);
+          text-align: center;
+          width: 90%;
+          max-width: 1400px; /* Set a maximum width for better responsiveness */
+          margin: auto; /* Center the container horizontally */
+          position: relative; /* Add relative positioning */
+          top: 10%; /* Shift the container down by 50% of its height */
+          transform: translateY(-50%); /* Adjust to vertically center the container */
+          transition: transform 0.3s; /* Add transition for a smooth animation */
+      }
+
+      #output {
+          margin-top: 20px;
+      }
+
+      .generated-address {
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background-color: #eaf4ff;
+          padding: 10px;
+          border-radius: 5px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Add this style to adjust the margin-top dynamically */
+      #output.open {
+          margin-top: 60px; /* Adjust the value based on your design */
+      }
+
+        h1 {
+            color: #333;
+        }
+
+        .input-container {
+            margin-bottom: 20px;
+        }
+        .generated-info {
+          margin-bottom: 20px; /* Adjust the margin as needed */
+        }
+        input {
+            padding: 10px;
+            margin-bottom: 10px;
+            width: calc(100% - 20px);
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+
+        .generated-address span {
+            flex-grow: 1;
+        }
+
+        .claim-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .claim-button:hover {
+            background-color: #0056b3;
+        }
+
+        .download-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .download-button:hover {
+            background-color: #45a049;
+        }
+
+        #connect-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #connect-dropdown {
+            display: none;
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            z-index: 1;
+        }
+
+        #connect-dropdown a {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: #333;
+            transition: background-color 0.3s;
+        }
+
+        #connect-dropdown a:hover {
+            background-color: #f2f2f2;
+        }
+
+
+
+    </style>
+
+</head>
+<body>
+
+
+  <script type="module">
+  import { Lucid , Blockfrost, toHex,fromHex,Data,Constr,fromText  } from "https://unpkg.com/lucid-cardano@0.10.0/web/mod.js"
+  const lucid = await Lucid.new(
+  new Blockfrost("https://cardano-mainnet.blockfrost.io/api/v0", "KEYBLOCKFROST"),
+  "Mainnet",
+  );
+
+  let inputCount = 1; // Initialize inputCount
+  let generatedData = []; // To store generated addresses and scripts
+
+  window.generateAddressScript = async function generateAddressScript(address,) {
+    let { paymentCredential, stakeCredential } = lucid.utils.getAddressDetails(address);
+    console.log(paymentCredential.hash);
+
+    var script_vesting = lucid.utils.nativeScriptFromJson({
+      type: "all",
+      scripts: [
+        { type: "sig", keyHash: paymentCredential.hash }
+      ],
+    });
+    // Store generated address and script in the array
+    generatedData.push({
+        beneficiary: address,
+        addressVesting: lucid.utils.validatorToAddress(script_vesting, stakeCredential),
+        script: script_vesting
+    });
+
+    return [lucid.utils.validatorToAddress(script_vesting, stakeCredential), script_vesting];
+  };
+
+
+
+  window.download=function downloadAddresses() {
+    const downloadLink = document.createElement('a');
+    const blob = new Blob([JSON.stringify(generatedData, null, 2)], { type: 'application/json' });
+
+    downloadLink.href = URL.createObjectURL(blob);
+    downloadLink.download = 'generated_addresses.json';
+    downloadLink.click();
+}
+
+window.connect=async function connect(){
+  let wallet=localStorage.getItem("wallet")
+  console.log(wallet)
+  const api = await window.cardano[wallet].enable();
+  lucid.selectWallet(api);
+}
+
+window.claim=async function claim(scriptaddress,script,beneficiary){
+  console.log("1")
+  let wallet=localStorage.getItem("wallet")
+  const api = await window.cardano[wallet].enable();
+  lucid.selectWallet(api);
+console.log("2")
+  const { paymentCredential } = lucid.utils.getAddressDetails(
+    beneficiary
+  );
+
+  let utxos= await lucid.utxosAt(scriptaddress)
+let lower = (Date.now() - 100000)
+  const tx = await lucid
+    .newTx()
+    .collectFrom(utxos)
+    .attachMintingPolicy(script)
+    .addSignerKey(paymentCredential.hash)
+    .validFrom(lower)
+    .complete();
+
+  const signedTx = await tx.sign().complete();
+
+  const txHash = await signedTx.submit();
+  console.log(txHash)
+}
+
+  </script>
+
+  <div id="container">
+    <h1>Shield address generator</h1>
+    <div class="input-container" id="inputContainer0">
+      <label for="address">Address:</label>
+      <input type="text" id="address0" placeholder="Enter cardano address that will be the owner of the shielded address">
+
+      <button onclick="generateAddress(document.getElementById('address0'))">Generate Shield Address</button>
+    </div>
+
+
+
+    <div id="output">
+      <h2>Generated Addresses:</h2>
+      <ul id="addressList"></ul>
+    </div>
+  </div>
+  <button id="connect-button" onclick="toggleConnectDropdown()">Connect</button>
+  <div id="connect-dropdown">
+      <a href="#" onclick="connectWallet('nami')">Nami</a>
+      <a href="#" onclick="connectWallet('eternl')">Eternl</a>
+  </div>
+  <script>
+    function addInput() {
+      const inputsContainer = document.querySelector('#output');
+      const newInputContainer = document.createElement('div');
+      newInputContainer.className = 'input-container';
+      newInputContainer.id = `inputContainer${inputCount}`;
+
+      newInputContainer.innerHTML = `
+        <label for="address">Beneficiary Address:</label>
+        <input type="text" id="address${inputCount}" placeholder="Enter cardano address">
+
+        <label for="date">Unlock date: </label>
+        <input type="date" id="date${inputCount}">
+
+        <button onclick="generateAddress(document.getElementById('address${inputCount}'), document.getElementById('date${inputCount}'))">Generate Address</button>
+      `;
+
+      inputsContainer.insertBefore(newInputContainer, document.getElementById('output'));
+
+      inputCount++;
+    }
+
+    async function generateAddress(addressInput) {
+        // Implement address generation logic here
+        const generatedAddress = addressInput.value;
+        const resultArray = await generateAddressScript(generatedAddress);
+        console.log(resultArray)
+        const finalAddress = resultArray[0];
+        const script = JSON.stringify(resultArray[1]);
+
+        // Display the generated address with "Claim Vesting" button
+        const addressList = document.getElementById('addressList');
+        const listItem = document.createElement('li');
+        listItem.className = 'generated-address';
+        addressList.innerHTML = `
+            <div class="generated-info">
+                <span>${finalAddress}</span>
+                <br><br><br> <!-- Add more line breaks as needed -->
+                <button class="claim-button" onclick='claim("${finalAddress}",${script},"${generatedAddress}")'>Withdraw funds</button>
+            </div>
+        `;
+
+
+        // Open the container by adding the 'open' class
+        document.getElementById('container').classList.add('open');
+    }
+
+    function toggleConnectDropdown() {
+        const dropdown = document.getElementById('connect-dropdown');
+        dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+
+        // Close the container by removing the 'open' class
+        document.getElementById('container').classList.remove('open');
+    }
+
+
+    function claimVesting() {
+      // Implement vesting claim logic here
+      //alert('Vesting claimed!'); // Placeholder, replace with your logic
+    }
+
+    function downloadAddresses() {
+      // Implement download logic here
+      const addressList = document.getElementById('addressList');
+      const addresses = Array.from(addressList.children).map(li => li.querySelector('span').textContent);
+      const downloadLink = document.createElement('a');
+      const blob = new Blob([addresses.join('\n')], { type: 'text/plain' });
+
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = 'generated_addresses.txt';
+      downloadLink.click();
+    }
+
+
+
+    function connectWallet(walletName) {
+        // Implement logic to connect to the selected wallet (Nami or Eternl)
+        localStorage.setItem("wallet", walletName);
+        connect()
+        // You may need to update the logic to actually connect to the chosen wallet.
+    }
+
+  </script>
+
+</body>
+</html>
